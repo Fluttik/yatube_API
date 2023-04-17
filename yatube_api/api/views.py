@@ -1,9 +1,7 @@
-# TODO:  Напишите свой вариант
-from rest_framework import viewsets, permissions, filters
+from rest_framework import viewsets, permissions, filters, mixins
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from django.shortcuts import get_object_or_404
-
 
 from posts.models import Group, Post
 from .permissions import IsAuthorOrReadOnlyPermission
@@ -11,7 +9,25 @@ from .serializers import (CommentSerializer, GroupSerializer,
                           PostSerializer, FollowSerializer)
 
 
+class FollowMixinViewSet(mixins.CreateModelMixin,
+                         mixins.ListModelMixin,
+                         viewsets.GenericViewSet):
+    """Данный класс используется для настройки методов доступа для
+    класса FollowViewSet."""
+
+    pass
+
+
 class PostViewSet(viewsets.ModelViewSet):
+    """Вьюсет для взаимодействия с постами.
+    Возможности:
+    - Получение списка публикаций (GET)
+    - Создание публикации (POST)
+    - Получение публикации (GET)
+    - Обновление публикации (PUT)
+    - Частичное обновление публикации (PATCH)
+    - Удаление публикации (DELETE)"""
+
     queryset = Post.objects.all()
     serializer_class = PostSerializer
     permission_classes = (
@@ -25,6 +41,15 @@ class PostViewSet(viewsets.ModelViewSet):
 
 
 class CommentViewSet(viewsets.ModelViewSet):
+    """Вьюсет для взаимодействия с комментариями.
+    Возможности:
+    - Получение списка комментариев (GET)
+    - Добавление комментария (POST)
+    - Получение комментария (GET)
+    - Обновление комментария (PUT)
+    - Частичное обновление комментария (PATCH)
+    - Удаление комментария (DELETE)"""
+
     serializer_class = CommentSerializer
     permission_classes = (IsAuthorOrReadOnlyPermission,)
 
@@ -38,11 +63,24 @@ class CommentViewSet(viewsets.ModelViewSet):
 
 
 class GroupViewSet(viewsets.ReadOnlyModelViewSet):
+    """Вьюсет для взаимодействия с группами.
+    Возможности:
+    - Получение списка сообществ (GET)
+    - Получение информации о сообществе (GET)"""
+
     queryset = Group.objects.all()
     serializer_class = GroupSerializer
 
 
-class FollowViewSet(viewsets.ModelViewSet):
+class FollowViewSet(FollowMixinViewSet):
+    """Вьюсет для взаимодействия с подписками.
+    Возможности:
+    - Возвращает все подписки пользователя, сделавшего запрос.
+    - Подписка пользователя от имени которого сделан запрос на пользователя
+      переданного в теле запроса.
+    - Анонимные запросы запрещены.
+    """
+
     serializer_class = FollowSerializer
     permission_classes = (permissions.IsAuthenticated,)
     filter_backends = (filters.SearchFilter,)
